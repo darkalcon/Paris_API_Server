@@ -1,0 +1,267 @@
+##apt install python3-pip
+##apt-get install python3-opencv
+#sudo apt-get install zbar-tools
+
+
+#usar sin permisos de administrador 
+
+#python3 -m pip install pyzbar
+##pip install mysql-connector-python
+##pip install python-snap7
+####pip install opencv-python      si es linux ###apt-get install python3-opencv
+#pip install Flask
+#pip install numpy
+#pip install -U Flask
+
+
+
+
+#pip install waitress
+#pip install wheel 
+#pip install gunicorn
+
+
+#from crypt import methods
+
+#from asyncio.windows_events import NULL
+#from logging import exception
+##from asyncio.windows_events import NULL
+
+#from asyncio.windows_events import NULL
+import random
+#from tkinter import E
+#from crypt import methods
+from flask import Flask, render_template,jsonify, Response,request
+import cv2
+import numpy as np
+import threading
+import queue
+#from PIL import Image
+
+from CD_coneccion_BD import Coneccion_BD_CD
+#from Servidor.CN_Seguridad_Acceso import Consulta_codigo
+
+from CN_Seguridad_Acceso import Seguridad_Acceso_CN
+import protocolo_captura_imagen
+
+import pyzbar.pyzbar as pyzbar
+
+import CN_Seguridad_Acceso
+import time
+
+
+app = Flask(__name__)
+
+direccion_ip_PLC='0.0.0.0'
+
+
+
+
+
+
+
+
+
+#######################################################################################################
+#Consultas GET
+########################################################################################################
+
+@app.route('/AbrirPuerta',methods=['GET'])
+def AbrirPuerta():
+    hash_equipo  = request.args.get('hash_equipo')
+    numPuerta  = request.args.get('num_puerta')
+    estado  = request.args.get('estado_puerta')
+    tipo_puerta  = request.args.get('tipo_puerta')
+
+    consulta=Coneccion_BD_CD()
+    consulta_SeguridadAcceso=Seguridad_Acceso_CN(direccion_ip_PLC)
+    row_equipo=consulta.Operacion_buscar_Hash_equipos(hash_equipo)
+    respuesta_bool=consulta_SeguridadAcceso.Modificar_estado_puerta(int(numPuerta),tipo_puerta,row_equipo[3])
+    if(respuesta_bool):
+    #if(True):
+        return jsonify({'estado':True})
+    else:
+        return jsonify({'estado':False})
+
+
+@app.route('/ConsultaCredenciales',methods=['GET'])
+def Get_consulta_credenciales():
+
+    consulta=Coneccion_BD_CD()
+
+    usuario  = request.args.get('usuario')
+    contrasena  = request.args.get('contrasena')
+    nombre_equipo  = request.args.get('equipo')
+
+    print(request.args.items)
+
+    if(usuario!=None):
+
+        usuario_actual =consulta.Operacion_Verificar_Credenciales(usuario,contrasena)
+        #preguntamos si hay un usuario valido
+        if(len(usuario_actual) != 0 ):
+            hash_equipo=hash(nombre_equipo)
+
+            list_equipos=consulta.Operacion_buscar_Equipos(usuario_actual[0][0])
+            id_ultimo_Registro_Equipos=consulta.id_max_table("Equipos","idEquipos")
+            if(list_equipos==None):
+                hash_equipo=consulta.Operacion_Crear_Equipo(id_ultimo_Registro_Equipos,hash_equipo,usuario_actual[0][0],nombre_equipo)
+            else:
+
+                for item in list_equipos:
+                    if(item[4]==nombre_equipo):
+                        row_equipo=item
+
+                #if(row_equipo!=NULL):
+                if(len(row_equipo)!=0):
+                    hash_equipo= row_equipo[1]
+                else:
+                    #id=consulta.id_max_table("Equipos","idEquipos")
+                    hash_equipo=consulta.Operacion_Crear_Equipo(id_ultimo_Registro_Equipos,hash_equipo,usuario_actual[0][0],nombre_equipo)
+
+            codigo_qr=consulta.Operacion_get_codigo_QR_CD(usuario_actual[0][0])[0][2]
+
+
+
+            return jsonify({'estado':True,'hash':hash_equipo,'codigo_qr':codigo_qr})
+
+        else:
+
+            return jsonify({'estado':False})
+    else:
+        return jsonify({'estado':None})
+
+@app.route('/getNewQR',methods=['GET'])
+def Get_new_codigo_qr():
+
+    consulta=Coneccion_BD_CD()
+
+    hash  = request.args.get('hash')
+
+
+    print("Hash de cliente consultando a Paris "+ str(request.args.items))
+
+    if(hash!=None):
+
+        equipo_actual =consulta.Operacion_Verificar_Hash_equipo(hash)
+        #preguntamos si hay un usuario valido
+
+        if(len(equipo_actual) != 0 ):
+
+            if(equipo_actual[0][2]==1):
+                new_codigo =random.randrange(99999999, 9999999999)
+                consulta.Operacion_up_codigo_ClaveSeguridad(equipo_actual[0][3],str(new_codigo))
+
+                print("Nuevo QR --- "+ str(new_codigo))
+                return jsonify({'estado':True,'codigo':str(new_codigo)})
+            else:
+
+                return jsonify({'estado':False})
+        else:
+
+            return jsonify({'estado':False})
+    else:
+        return jsonify({'estado':None})
+
+@app.route('/Get_QR',methods=['GET'])
+def Get_QR():
+
+    consulta=Coneccion_BD_CD()
+
+    hash  = request.args.get('hash')
+
+
+    print("Hash de cliente consultando a Paris "+ str(request.args.items))
+
+    if(hash!=None):
+
+        equipo_actual =consulta.Operacion_Verificar_Hash_equipo(hash)
+        #preguntamos si hay un usuario valido
+
+        if(len(equipo_actual) != 0 ):
+
+            if(equipo_actual[0][2]==1):
+
+                row_tabla_Clave_Seguridad= consulta.Operacion_get_codigo_QR_CD(equipo_actual[0][3])
+
+                print("codigo QR consultado por usuario --- "+str(equipo_actual[0][3])+" --- "+ str(row_tabla_Clave_Seguridad))
+                codigo=row_tabla_Clave_Seguridad[0][2]
+                return jsonify({'estado':True,'codigo':str(codigo)})
+            else:
+
+                return jsonify({'estado':False})
+        else:
+
+            return jsonify({'estado':False})
+    else:
+        return jsonify({'estado':None})
+
+
+
+@app.route('/Get_list_usuarios',methods=['GET'])
+def Get_list_usuarios():
+
+    consulta=Coneccion_BD_CD()
+
+    hash  = request.args.get('hash')
+
+
+    print("Hash de cliente consultando a Paris "+ str(request.args.items))
+
+    if(hash!=None):
+
+        equipo_actual =consulta.Operacion_Verificar_Hash_equipo(hash)
+        #preguntamos si hay un usuario valido
+
+        if(len(equipo_actual) != 0 ):
+
+            if(equipo_actual[0][2]==1):
+
+
+
+                lista_usuarios= consulta.Get_list_usuatios()
+                print(lista_usuarios)
+
+            
+
+                return jsonify({'estado':True,'lista':lista_usuarios})
+            else:
+
+                return jsonify({'estado':False})
+        else:
+
+            return jsonify({'estado':False})
+    else:
+        return jsonify({'estado':None})
+
+
+
+
+@app.route('/testP',methods=['POS'])
+def test_post():
+    usuario  = request.args.get('usuario')
+
+
+    return jsonify({'estado':"False"})
+
+@app.route('/test')
+def test():
+
+    return jsonify({'estado':"False"})
+
+@app.route('/')
+def index():
+    #return "Video streaming home page."
+    return render_template('index.html')
+
+####################################################################################################################################################
+####################################################################################################################################################
+####################################################################################################################################################
+#Remplasar todo get
+####################################################################################################################################################
+####################################################################################################################################################
+####################################################################################################################################################
+if __name__ == '__main__':
+
+
+    app.run( host="192.168.12.30", port=65323,debug=False)
