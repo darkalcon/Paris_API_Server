@@ -707,8 +707,8 @@ if __name__ == '__main__':
     #threading.Thread(target=on_servidor_detector_Movimineto,daemon=True).start()
     threading.Thread(target=on_servidor_detector_Codigos,daemon=True).start()
 
-    app.run( host="192.168.12.30", port=65322,debug=False)
-    #app.run( host="192.168.70.10", port=65322,debug=False)
+    #app.run( host="192.168.12.30", port=65322,debug=False)
+    app.run( host="192.168.70.10", port=65322,debug=False)
     #app.run(debug=True)
     #while True:
     #    app.run(threaded=True
