@@ -1,15 +1,23 @@
-##apt install python3-pip
-##apt-get install python3-opencv
-#sudo apt-get install zbar-tools
+###apt-get install git
+
+
+
+
+###apt install python3-pip
+###apt-get install python3-opencv
+#apt-get install zbar-tools
 
 
 #usar sin permisos de administrador 
 
-#python3 -m pip install pyzbar
+
 ##pip install mysql-connector-python
-##pip install python-snap7
+###pip install python-snap7
+###pip install Flask
+
+#python3 -m pip install pyzbar
 ####pip install opencv-python      si es linux ###apt-get install python3-opencv
-#pip install Flask
+
 #pip install numpy
 #pip install -U Flask
 
@@ -57,8 +65,8 @@ direccion_ip_PLC='0.0.0.0'
 #Captura de Imagen Camaras Ip y USB
 ########################################################################################################
 
-url_direccion_Inter_C01_P01='rtsp://admin:Ronald11@192.168.12.4:554/cam/realmonitor?channel=1&subtype=0&unicast=true'
-url_direccion_Inter_C01_P01_Lector_QR='rtsp://admin:Ronald11@192.168.12.4:554/cam/realmonitor?channel=1&subtype=1&unicast=true'
+url_direccion_Inter_C01_P01='rtsp://admin:Ronald11@192.168.12.4:554/cam/realmonitor?channel=1&subtype=1&unicast=true'
+url_direccion_Inter_C01_P01_Lector_QR='rtsp://admin:Ronald11@192.168.12.4:554/cam/realmonitor?channel=1&subtype=0&unicast=true'
 url_direccion_Cam_C01_P01='rtsp://admin:ECIOVL@192.168.70.62:554/Streaming/Channels/1'
 url_direccion_Cam_C01_P01_Lector_QR='rtsp://admin:ECIOVL@192.168.70.62:554/subStreaming/Channels/2'
 url_direccion_Cam_C01_P02='rtsp://admin:Hik12345@192.168.70.61:554/cam/realmonitor?channel=1&subtype=0&unicast=true'
